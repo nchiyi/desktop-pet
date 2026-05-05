@@ -27,7 +27,7 @@ impl Default for CliTool {
     fn default() -> Self { CliTool::Claude }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct AppConfig {
     pub hotkey: String,
     pub movement_mode: MovementMode,
@@ -99,12 +99,17 @@ impl AppConfig {
         }
         #[cfg(not(any(target_os = "windows", target_os = "macos")))]
         {
-            PathBuf::from(".desktop-pet")
+            let home = std::env::var("HOME").unwrap_or_else(|_| ".".into());
+            PathBuf::from(home).join(".config/DesktopPet")
         }
     }
 
     pub fn config_path() -> PathBuf {
         Self::app_data_dir().join("config.toml")
+    }
+
+    pub fn load_or_default(path: &Path) -> Self {
+        Self::load(path).unwrap_or_default()
     }
 }
 
@@ -120,7 +125,6 @@ mod tests {
         let cfg = AppConfig::default();
         cfg.save(&path).unwrap();
         let loaded = AppConfig::load(&path).unwrap();
-        assert_eq!(loaded.hotkey, cfg.hotkey);
-        assert_eq!(loaded.movement_mode, cfg.movement_mode);
+        assert_eq!(loaded, cfg);
     }
 }
