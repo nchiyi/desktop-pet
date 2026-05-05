@@ -54,7 +54,7 @@ impl Default for AppConfig {
         Self {
             hotkey: "Alt+Space".into(),
             movement_mode: MovementMode::FullScreen,
-            active_character: "default".into(),
+            active_character: "donghae".into(),
             character_size: 80,
             movement_speed: 1.0,
             idle_anim_interval_min: 30,

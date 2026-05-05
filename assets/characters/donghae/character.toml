@@ -1,0 +1,8 @@
+name = "Donghae"
+author = "nchiyi"
+version = "1.0"
+size = 100
+
+[animation]
+idle_duration = 3.0
+think_duration = 0

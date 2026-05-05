@@ -1,34 +1,31 @@
-use std::path::PathBuf;
 use tauri::{App, Manager};
-
 use crate::config::AppConfig;
 
-/// Copy bundled default character to app data dir on first launch.
+/// Copy all bundled characters to app data dir on first launch.
 pub fn init_app_data(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
-    let data_dir = AppConfig::app_data_dir();
-    let characters_dir = data_dir.join("characters");
-    let default_dir = characters_dir.join("default");
-
-    if !default_dir.exists() {
-        std::fs::create_dir_all(&default_dir)?;
-        copy_bundled_default(app, &default_dir)?;
-    }
-
-    Ok(())
-}
-
-fn copy_bundled_default(app: &mut App, dest: &PathBuf) -> Result<(), Box<dyn std::error::Error>> {
     let resource_path = app.path().resource_dir()?;
-    let bundled_default = resource_path.join("assets").join("characters").join("default");
+    let bundled_chars = resource_path.join("assets").join("characters");
+    let dest_chars = AppConfig::app_data_dir().join("characters");
 
-    if !bundled_default.exists() {
+    if !bundled_chars.exists() {
         return Ok(());
     }
 
-    for entry in std::fs::read_dir(&bundled_default)? {
+    for entry in std::fs::read_dir(&bundled_chars)? {
         let entry = entry?;
-        let file_name = entry.file_name();
-        std::fs::copy(entry.path(), dest.join(&file_name))?;
+        if !entry.file_type()?.is_dir() {
+            continue;
+        }
+        let char_name = entry.file_name();
+        let dest_dir = dest_chars.join(&char_name);
+        if dest_dir.exists() {
+            continue; // 已存在，不覆蓋（保留使用者修改）
+        }
+        std::fs::create_dir_all(&dest_dir)?;
+        for file in std::fs::read_dir(entry.path())? {
+            let file = file?;
+            std::fs::copy(file.path(), dest_dir.join(file.file_name()))?;
+        }
     }
 
     Ok(())
