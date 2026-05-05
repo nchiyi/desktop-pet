@@ -4,6 +4,7 @@ pub mod session;
 pub mod character;
 pub mod installer;
 pub mod commands;
+pub mod tray;
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
