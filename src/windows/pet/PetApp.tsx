@@ -86,6 +86,7 @@ export function PetApp() {
         height: config.character_size,
         cursor: "grab",
         userSelect: "none",
+        pointerEvents: "auto",
       }}
       onMouseDown={handleMouseDown}
       onMouseUp={handleMouseUp}

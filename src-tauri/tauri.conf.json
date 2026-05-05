@@ -15,14 +15,16 @@
       {
         "label": "pet",
         "url": "index.html",
-        "width": 150,
-        "height": 150,
+        "width": 3840,
+        "height": 2160,
         "transparent": true,
         "decorations": false,
         "alwaysOnTop": true,
         "skipTaskbar": true,
         "resizable": false,
-        "visible": true
+        "visible": true,
+        "x": 0,
+        "y": 0
       },
       {
         "label": "chat",
