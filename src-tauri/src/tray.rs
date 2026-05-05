@@ -3,27 +3,35 @@ use tauri::{
     tray::{MouseButton, TrayIconBuilder, TrayIconEvent},
     AppHandle, Manager,
 };
+use crate::i18n::{strings, Lang};
 
 pub fn setup_tray(app: &AppHandle) -> tauri::Result<()> {
-    let show         = MenuItem::with_id(app, "show",         "顯示 / 隱藏角色", true, None::<&str>)?;
+    let sys_lang = crate::i18n::detect_system_lang();
+    setup_tray_with_lang(app, &sys_lang)
+}
+
+fn setup_tray_with_lang(app: &AppHandle, lang: &Lang) -> tauri::Result<()> {
+    let s = strings(lang);
+
+    let show         = MenuItem::with_id(app, "show",         s.show_hide,    true, None::<&str>)?;
     let sep1         = PredefinedMenuItem::separator(app)?;
-    let char_select  = MenuItem::with_id(app, "char_select",  "選擇角色",        true, None::<&str>)?;
-    let char_folder  = MenuItem::with_id(app, "char_folder",  "開啟角色資料夾",  true, None::<&str>)?;
-    let char_install = MenuItem::with_id(app, "char_install", "安裝角色(.zip)",  true, None::<&str>)?;
-    let char_guide   = MenuItem::with_id(app, "char_guide",   "角色製作說明",    true, None::<&str>)?;
-    let char_menu    = Submenu::with_items(app, "角色管理", true,
+    let char_select  = MenuItem::with_id(app, "char_select",  s.char_select,  true, None::<&str>)?;
+    let char_folder  = MenuItem::with_id(app, "char_folder",  s.char_folder,  true, None::<&str>)?;
+    let char_install = MenuItem::with_id(app, "char_install", s.char_install, true, None::<&str>)?;
+    let char_guide   = MenuItem::with_id(app, "char_guide",   s.char_guide,   true, None::<&str>)?;
+    let char_menu    = Submenu::with_items(app, s.char_mgmt, true,
         &[&char_select, &char_folder, &char_install, &char_guide])?;
     let sep2     = PredefinedMenuItem::separator(app)?;
-    let settings = MenuItem::with_id(app, "settings", "設定",     true, None::<&str>)?;
-    let history  = MenuItem::with_id(app, "history",  "對話記錄",  true, None::<&str>)?;
+    let settings = MenuItem::with_id(app, "settings", s.settings, true, None::<&str>)?;
+    let history  = MenuItem::with_id(app, "history",  s.history,  true, None::<&str>)?;
     let sep3     = PredefinedMenuItem::separator(app)?;
-    let quit     = MenuItem::with_id(app, "quit",     "退出",     true, None::<&str>)?;
+    let quit     = MenuItem::with_id(app, "quit",     s.quit,     true, None::<&str>)?;
 
     let menu = Menu::with_items(app, &[
         &show, &sep1, &char_menu, &sep2, &settings, &history, &sep3, &quit,
     ])?;
 
-    TrayIconBuilder::new()
+    TrayIconBuilder::with_id("main")
         .menu(&menu)
         .on_menu_event(|app, event| handle_menu(app, event.id.as_ref()))
         .on_tray_icon_event(|tray, event| {
@@ -35,6 +43,33 @@ pub fn setup_tray(app: &AppHandle) -> tauri::Result<()> {
             }
         })
         .build(app)?;
+    Ok(())
+}
+
+pub fn rebuild_tray(app: &AppHandle, lang: &Lang) -> tauri::Result<()> {
+    let s = strings(lang);
+
+    let show         = MenuItem::with_id(app, "show",         s.show_hide,    true, None::<&str>)?;
+    let sep1         = PredefinedMenuItem::separator(app)?;
+    let char_select  = MenuItem::with_id(app, "char_select",  s.char_select,  true, None::<&str>)?;
+    let char_folder  = MenuItem::with_id(app, "char_folder",  s.char_folder,  true, None::<&str>)?;
+    let char_install = MenuItem::with_id(app, "char_install", s.char_install, true, None::<&str>)?;
+    let char_guide   = MenuItem::with_id(app, "char_guide",   s.char_guide,   true, None::<&str>)?;
+    let char_menu    = Submenu::with_items(app, s.char_mgmt, true,
+        &[&char_select, &char_folder, &char_install, &char_guide])?;
+    let sep2     = PredefinedMenuItem::separator(app)?;
+    let settings = MenuItem::with_id(app, "settings", s.settings, true, None::<&str>)?;
+    let history  = MenuItem::with_id(app, "history",  s.history,  true, None::<&str>)?;
+    let sep3     = PredefinedMenuItem::separator(app)?;
+    let quit     = MenuItem::with_id(app, "quit",     s.quit,     true, None::<&str>)?;
+
+    let new_menu = Menu::with_items(app, &[
+        &show, &sep1, &char_menu, &sep2, &settings, &history, &sep3, &quit,
+    ])?;
+
+    if let Some(tray) = app.tray_by_id("main") {
+        tray.set_menu(Some(new_menu))?;
+    }
     Ok(())
 }
 

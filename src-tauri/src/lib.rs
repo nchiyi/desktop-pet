@@ -6,6 +6,8 @@ pub mod installer;
 pub mod commands;
 pub mod tray;
 pub mod setup;
+pub mod i18n;
+pub mod app_menu;
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]

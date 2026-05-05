@@ -46,6 +46,7 @@ pub struct AppConfig {
     pub cli_tool: CliTool,
     pub cli_path_override: Option<String>,
     pub reply_language: String,
+    pub language: String,  // "system" | "zh-TW" | "en"
 }
 
 impl Default for AppConfig {
@@ -68,6 +69,7 @@ impl Default for AppConfig {
             cli_tool: CliTool::Claude,
             cli_path_override: None,
             reply_language: "繁體中文".into(),
+            language: "system".to_string(),
         }
     }
 }

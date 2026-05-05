@@ -1,0 +1,40 @@
+{
+  "settings": {
+    "title": "設定",
+    "general": "一般設定",
+    "movement": "移動模式",
+    "animation": "動畫設定",
+    "cli": "CLI 設定",
+    "language": "語言",
+    "language_system": "跟隨系統",
+    "language_zh": "中文",
+    "language_en": "English",
+    "hotkey": "快速鍵",
+    "autostart": "開機自動啟動",
+    "idle_bubble": "閒置氣泡對話",
+    "night_mode": "深夜睡眠模式",
+    "save": "儲存",
+    "saved": "已儲存"
+  },
+  "chat": {
+    "title": "對話記錄",
+    "placeholder": "輸入訊息...",
+    "send": "送出",
+    "reset": "重新開始",
+    "summarize": "總結",
+    "keep_going": "繼續聊",
+    "turn_warning": "我們聊了很多了！要幫你總結這段對話嗎？"
+  },
+  "guide": {
+    "title": "角色製作說明",
+    "open_folder": "開啟角色資料夾",
+    "download_example": "下載範例角色"
+  },
+  "pet": {
+    "thinking": "思考中...",
+    "long_reply": "回覆較長，點我查看 →"
+  },
+  "tray": {
+    "show_hide": "顯示 / 隱藏角色"
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "settings": {
+    "title": "Settings",
+    "general": "General",
+    "movement": "Movement",
+    "animation": "Animation",
+    "cli": "CLI Settings",
+    "language": "Language",
+    "language_system": "Follow System",
+    "language_zh": "中文",
+    "language_en": "English",
+    "hotkey": "Hotkey",
+    "autostart": "Launch at Login",
+    "idle_bubble": "Idle Bubbles",
+    "night_mode": "Night Sleep Mode",
+    "save": "Save",
+    "saved": "Saved"
+  },
+  "chat": {
+    "title": "Chat History",
+    "placeholder": "Type a message...",
+    "send": "Send",
+    "reset": "New Session",
+    "summarize": "Summarize",
+    "keep_going": "Keep Going",
+    "turn_warning": "We've chatted a lot! Want me to summarize this conversation?"
+  },
+  "guide": {
+    "title": "Character Guide",
+    "open_folder": "Open Character Folder",
+    "download_example": "Download Example"
+  },
+  "pet": {
+    "thinking": "Thinking...",
+    "long_reply": "Long reply, click to view →"
+  },
+  "tray": {
+    "show_hide": "Show / Hide Pet"
+  }
+}

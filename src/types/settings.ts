@@ -26,6 +26,7 @@ export interface AppConfig {
   cli_tool: CliTool;
   cli_path_override: string | null;
   reply_language: string;
+  language: string;  // "system" | "zh-TW" | "en"
 }
 
 export const DEFAULT_CONFIG: AppConfig = {
@@ -46,4 +47,5 @@ export const DEFAULT_CONFIG: AppConfig = {
   cli_tool: "Claude",
   cli_path_override: null,
   reply_language: "繁體中文",
+  language: "system",
 };

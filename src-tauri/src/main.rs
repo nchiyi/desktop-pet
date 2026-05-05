@@ -20,6 +20,13 @@ fn main() {
         .setup(|app| {
             tauri_app_lib::tray::setup_tray(&app.handle())?;
             tauri_app_lib::setup::init_app_data(app)?;
+            // 讀取設定，決定語言
+            let cfg = tauri_app_lib::config::AppConfig::load_or_default(
+                &tauri_app_lib::config::AppConfig::config_path()
+            );
+            let sys_lang = tauri_app_lib::i18n::detect_system_lang();
+            let lang = tauri_app_lib::i18n::lang_from_str(&cfg.language, &sys_lang);
+            tauri_app_lib::app_menu::setup_app_menu(&app.handle(), &lang)?;
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -35,6 +42,7 @@ fn main() {
             tauri_app_lib::commands::get_animation_path,
             tauri_app_lib::commands::get_idle_phrases,
             tauri_app_lib::commands::show_chat_window,
+            tauri_app_lib::commands::set_language,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

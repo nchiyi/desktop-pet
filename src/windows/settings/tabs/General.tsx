@@ -1,4 +1,6 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
+import { invoke } from "@tauri-apps/api/core";
 import { useSettingsStore } from "../../../stores/settingsStore";
 
 const labelStyle: React.CSSProperties = { display: "flex", flexDirection: "column", gap: 6, fontSize: 13 };
@@ -6,23 +8,49 @@ const inputStyle: React.CSSProperties = { border: "1.5px solid #ddd", borderRadi
 
 export function General() {
   const { config, save } = useSettingsStore();
+  const { t, i18n } = useTranslation();
+
+  const handleLanguageChange = async (lang: string) => {
+    await invoke("set_language", { language: lang });
+    const actualLang =
+      lang === "system"
+        ? navigator.language.startsWith("zh")
+          ? "zh-TW"
+          : "en"
+        : lang;
+    i18n.changeLanguage(actualLang);
+    save({ ...config, language: lang });
+  };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <h2 style={{ margin: 0, fontSize: 17 }}>一般設定</h2>
+      <h2 style={{ margin: 0, fontSize: 17 }}>{t("settings.general")}</h2>
       <label style={labelStyle}>
-        快速鍵
+        {t("settings.language")}
+        <select
+          value={config.language}
+          onChange={(e) => handleLanguageChange(e.target.value)}
+          style={inputStyle}
+        >
+          <option value="system">{t("settings.language_system")}</option>
+          <option value="zh-TW">{t("settings.language_zh")}</option>
+          <option value="en">{t("settings.language_en")}</option>
+        </select>
+      </label>
+      <label style={labelStyle}>
+        {t("settings.hotkey")}
         <input value={config.hotkey} onChange={(e) => save({ ...config, hotkey: e.target.value })} style={inputStyle} placeholder="Alt+Space" />
       </label>
       <label style={labelStyle}>
-        <span>開機自動啟動</span>
+        <span>{t("settings.autostart")}</span>
         <input type="checkbox" checked={config.launch_at_startup} onChange={(e) => save({ ...config, launch_at_startup: e.target.checked })} />
       </label>
       <label style={labelStyle}>
-        <span>閒置氣泡對話</span>
+        <span>{t("settings.idle_bubble")}</span>
         <input type="checkbox" checked={config.show_idle_bubbles} onChange={(e) => save({ ...config, show_idle_bubbles: e.target.checked })} />
       </label>
       <label style={labelStyle}>
-        <span>深夜睡眠模式</span>
+        <span>{t("settings.night_mode")}</span>
         <input type="checkbox" checked={config.night_sleep_mode} onChange={(e) => save({ ...config, night_sleep_mode: e.target.checked })} />
       </label>
       {config.night_sleep_mode && (

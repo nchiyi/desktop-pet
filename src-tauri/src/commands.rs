@@ -170,3 +170,21 @@ pub fn show_chat_window(app: tauri::AppHandle) -> Result<(), String> {
     }
     Ok(())
 }
+
+#[tauri::command]
+pub fn set_language(
+    app: tauri::AppHandle,
+    state: State<AppState>,
+    language: String,
+) -> Result<(), String> {
+    let mut cfg = state.config.lock().unwrap();
+    cfg.language = language.clone();
+    cfg.save(&AppConfig::config_path()).map_err(|e| e.to_string())?;
+    drop(cfg);
+
+    let system_lang = crate::i18n::detect_system_lang();
+    let lang = crate::i18n::lang_from_str(&language, &system_lang);
+    crate::tray::rebuild_tray(&app, &lang).map_err(|e| e.to_string())?;
+    crate::app_menu::setup_app_menu(&app, &lang).map_err(|e| e.to_string())?;
+    Ok(())
+}
