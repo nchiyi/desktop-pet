@@ -142,13 +142,32 @@ pub fn open_characters_folder(_state: State<AppState>) -> Result<(), String> {
 
 #[tauri::command]
 pub fn get_animation_path(state: State<AppState>, anim_name: String) -> String {
+    use base64::{Engine as _, engine::general_purpose::STANDARD};
+
     let config = state.config.lock().unwrap();
     let characters_dir = AppConfig::app_data_dir().join("characters");
     let char_dir = characters_dir.join(&config.active_character);
-    if let Ok(meta) = CharacterMeta::load(&char_dir) {
-        meta.animation_path(&anim_name).to_string_lossy().to_string()
+    drop(config);
+
+    let path = if let Ok(meta) = CharacterMeta::load(&char_dir) {
+        meta.animation_path(&anim_name)
     } else {
-        String::new()
+        return String::new();
+    };
+
+    let ext = path.extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("png")
+        .to_lowercase();
+    let mime = match ext.as_str() {
+        "gif"  => "image/gif",
+        "webp" => "image/webp",
+        _      => "image/png",
+    };
+
+    match std::fs::read(&path) {
+        Ok(bytes) => format!("data:{};base64,{}", mime, STANDARD.encode(&bytes)),
+        Err(_)    => String::new(),
     }
 }
 
