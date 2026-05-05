@@ -19,6 +19,7 @@ fn main() {
         .manage(AppState::new())
         .setup(|app| {
             tauri_app_lib::tray::setup_tray(&app.handle())?;
+            tauri_app_lib::setup::init_app_data(app)?;
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
