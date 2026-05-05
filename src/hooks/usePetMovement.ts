@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from "react";
+import React, { useEffect, useRef, useCallback } from "react";
 import { MovementMode } from "../types/settings";
 import { usePetStore } from "../stores/petStore";
 
