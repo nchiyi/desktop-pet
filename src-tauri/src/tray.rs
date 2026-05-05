@@ -30,9 +30,13 @@ fn build_tray_menu(app: &AppHandle, lang: &Lang) -> tauri::Result<Menu<tauri::Wr
 
 fn setup_tray_with_lang(app: &AppHandle, lang: &Lang) -> tauri::Result<()> {
     let menu = build_tray_menu(app, lang)?;
-    TrayIconBuilder::with_id("main")
+    let mut builder = TrayIconBuilder::with_id("main")
         .menu(&menu)
-        .on_menu_event(|app, event| handle_menu(app, event.id.as_ref()))
+        .on_menu_event(|app, event| handle_menu(app, event.id.as_ref()));
+    if let Some(icon) = app.default_window_icon() {
+        builder = builder.icon(icon.clone());
+    }
+    builder
         .on_tray_icon_event(|tray, event| {
             if matches!(event, TrayIconEvent::Click { button: MouseButton::Left, .. }) {
                 if let Some(w) = tray.app_handle().get_webview_window("pet") {
@@ -44,6 +48,7 @@ fn setup_tray_with_lang(app: &AppHandle, lang: &Lang) -> tauri::Result<()> {
         .build(app)?;
     Ok(())
 }
+
 
 pub fn rebuild_tray(app: &AppHandle, lang: &Lang) -> tauri::Result<()> {
     let new_menu = build_tray_menu(app, lang)?;
