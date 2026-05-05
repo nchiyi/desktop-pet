@@ -13,6 +13,8 @@
     "autostart": "開機自動啟動",
     "idle_bubble": "閒置氣泡對話",
     "night_mode": "深夜睡眠模式",
+    "night_start": "開始時間",
+    "night_end": "結束時間",
     "save": "儲存",
     "saved": "已儲存"
   },

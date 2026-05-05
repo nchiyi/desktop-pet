@@ -11,13 +11,7 @@ export function General() {
   const { t, i18n } = useTranslation();
 
   const handleLanguageChange = async (lang: string) => {
-    await invoke("set_language", { language: lang });
-    const actualLang =
-      lang === "system"
-        ? navigator.language.startsWith("zh")
-          ? "zh-TW"
-          : "en"
-        : lang;
+    const actualLang = await invoke<string>("set_language", { language: lang });
     i18n.changeLanguage(actualLang);
     save({ ...config, language: lang });
   };
@@ -56,11 +50,11 @@ export function General() {
       {config.night_sleep_mode && (
         <div style={{ display: "flex", gap: 12 }}>
           <label style={labelStyle}>
-            開始時間
+            {t("settings.night_start")}
             <input type="number" min={0} max={23} value={config.night_start_hour} onChange={(e) => save({ ...config, night_start_hour: +e.target.value })} style={{ ...inputStyle, width: 60 }} />
           </label>
           <label style={labelStyle}>
-            結束時間
+            {t("settings.night_end")}
             <input type="number" min={0} max={23} value={config.night_end_hour} onChange={(e) => save({ ...config, night_end_hour: +e.target.value })} style={{ ...inputStyle, width: 60 }} />
           </label>
         </div>

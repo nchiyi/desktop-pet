@@ -13,6 +13,8 @@
     "autostart": "Launch at Login",
     "idle_bubble": "Idle Bubbles",
     "night_mode": "Night Sleep Mode",
+    "night_start": "Start Time",
+    "night_end": "End Time",
     "save": "Save",
     "saved": "Saved"
   },

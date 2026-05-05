@@ -176,7 +176,7 @@ pub fn set_language(
     app: tauri::AppHandle,
     state: State<AppState>,
     language: String,
-) -> Result<(), String> {
+) -> Result<String, String> {
     let mut cfg = state.config.lock().unwrap();
     cfg.language = language.clone();
     cfg.save(&AppConfig::config_path()).map_err(|e| e.to_string())?;
@@ -186,5 +186,11 @@ pub fn set_language(
     let lang = crate::i18n::lang_from_str(&language, &system_lang);
     crate::tray::rebuild_tray(&app, &lang).map_err(|e| e.to_string())?;
     crate::app_menu::setup_app_menu(&app, &lang).map_err(|e| e.to_string())?;
-    Ok(())
+
+    // 回傳實際套用的語言碼
+    let code = match lang {
+        crate::i18n::Lang::ZhTW => "zh-TW",
+        crate::i18n::Lang::En => "en",
+    };
+    Ok(code.to_string())
 }

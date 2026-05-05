@@ -85,14 +85,26 @@ pub fn strings(lang: &Lang) -> Strings {
 
 /// 偵測系統語言，回傳 Lang
 pub fn detect_system_lang() -> Lang {
-    let lang_str = std::env::var("LANG")
-        .or_else(|_| std::env::var("LC_ALL"))
-        .unwrap_or_default()
-        .to_lowercase();
-    if lang_str.starts_with("zh") {
-        Lang::ZhTW
-    } else {
-        Lang::En
+    #[cfg(target_os = "macos")]
+    {
+        if let Ok(out) = std::process::Command::new("defaults")
+            .args(["read", "-g", "AppleLanguages"])
+            .output()
+        {
+            let s = String::from_utf8_lossy(&out.stdout).to_lowercase();
+            if s.contains("zh-hant") || s.contains("zh_tw") || s.contains("zh-tw") {
+                return Lang::ZhTW;
+            }
+        }
+        return Lang::En;
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        let lang_str = std::env::var("LANG")
+            .or_else(|_| std::env::var("LC_ALL"))
+            .unwrap_or_default()
+            .to_lowercase();
+        if lang_str.starts_with("zh") { Lang::ZhTW } else { Lang::En }
     }
 }
 

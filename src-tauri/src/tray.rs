@@ -10,9 +10,8 @@ pub fn setup_tray(app: &AppHandle) -> tauri::Result<()> {
     setup_tray_with_lang(app, &sys_lang)
 }
 
-fn setup_tray_with_lang(app: &AppHandle, lang: &Lang) -> tauri::Result<()> {
+fn build_tray_menu(app: &AppHandle, lang: &Lang) -> tauri::Result<Menu<tauri::Wry>> {
     let s = strings(lang);
-
     let show         = MenuItem::with_id(app, "show",         s.show_hide,    true, None::<&str>)?;
     let sep1         = PredefinedMenuItem::separator(app)?;
     let char_select  = MenuItem::with_id(app, "char_select",  s.char_select,  true, None::<&str>)?;
@@ -26,11 +25,11 @@ fn setup_tray_with_lang(app: &AppHandle, lang: &Lang) -> tauri::Result<()> {
     let history  = MenuItem::with_id(app, "history",  s.history,  true, None::<&str>)?;
     let sep3     = PredefinedMenuItem::separator(app)?;
     let quit     = MenuItem::with_id(app, "quit",     s.quit,     true, None::<&str>)?;
+    Menu::with_items(app, &[&show, &sep1, &char_menu, &sep2, &settings, &history, &sep3, &quit])
+}
 
-    let menu = Menu::with_items(app, &[
-        &show, &sep1, &char_menu, &sep2, &settings, &history, &sep3, &quit,
-    ])?;
-
+fn setup_tray_with_lang(app: &AppHandle, lang: &Lang) -> tauri::Result<()> {
+    let menu = build_tray_menu(app, lang)?;
     TrayIconBuilder::with_id("main")
         .menu(&menu)
         .on_menu_event(|app, event| handle_menu(app, event.id.as_ref()))
@@ -47,30 +46,13 @@ fn setup_tray_with_lang(app: &AppHandle, lang: &Lang) -> tauri::Result<()> {
 }
 
 pub fn rebuild_tray(app: &AppHandle, lang: &Lang) -> tauri::Result<()> {
-    let s = strings(lang);
-
-    let show         = MenuItem::with_id(app, "show",         s.show_hide,    true, None::<&str>)?;
-    let sep1         = PredefinedMenuItem::separator(app)?;
-    let char_select  = MenuItem::with_id(app, "char_select",  s.char_select,  true, None::<&str>)?;
-    let char_folder  = MenuItem::with_id(app, "char_folder",  s.char_folder,  true, None::<&str>)?;
-    let char_install = MenuItem::with_id(app, "char_install", s.char_install, true, None::<&str>)?;
-    let char_guide   = MenuItem::with_id(app, "char_guide",   s.char_guide,   true, None::<&str>)?;
-    let char_menu    = Submenu::with_items(app, s.char_mgmt, true,
-        &[&char_select, &char_folder, &char_install, &char_guide])?;
-    let sep2     = PredefinedMenuItem::separator(app)?;
-    let settings = MenuItem::with_id(app, "settings", s.settings, true, None::<&str>)?;
-    let history  = MenuItem::with_id(app, "history",  s.history,  true, None::<&str>)?;
-    let sep3     = PredefinedMenuItem::separator(app)?;
-    let quit     = MenuItem::with_id(app, "quit",     s.quit,     true, None::<&str>)?;
-
-    let new_menu = Menu::with_items(app, &[
-        &show, &sep1, &char_menu, &sep2, &settings, &history, &sep3, &quit,
-    ])?;
-
+    let new_menu = build_tray_menu(app, lang)?;
     if let Some(tray) = app.tray_by_id("main") {
         tray.set_menu(Some(new_menu))?;
+        Ok(())
+    } else {
+        Err(tauri::Error::AssetNotFound("main tray not found".into()))
     }
-    Ok(())
 }
 
 fn handle_menu(app: &AppHandle, id: &str) {
