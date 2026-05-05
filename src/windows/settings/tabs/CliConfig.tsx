@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useSettingsStore } from "../../../stores/settingsStore";
 import { CliTool } from "../../../types/settings";

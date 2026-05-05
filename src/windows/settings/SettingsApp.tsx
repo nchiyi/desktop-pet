@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useSettingsStore } from "../../stores/settingsStore";
 import { General } from "./tabs/General";
 import { Movement } from "./tabs/Movement";

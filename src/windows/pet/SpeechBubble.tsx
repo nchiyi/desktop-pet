@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 
 const MAX_BUBBLE_CHARS = 100;
 

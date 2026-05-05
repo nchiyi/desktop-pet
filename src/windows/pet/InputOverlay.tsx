@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { usePetStore } from "../../stores/petStore";
 import { useSessionStore } from "../../stores/sessionStore";

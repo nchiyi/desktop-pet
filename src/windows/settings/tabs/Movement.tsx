@@ -1,4 +1,3 @@
-import React from "react";
 import { useSettingsStore } from "../../../stores/settingsStore";
 import { MovementMode } from "../../../types/settings";
 

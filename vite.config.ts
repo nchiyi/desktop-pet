@@ -31,7 +31,7 @@ export default defineConfig(async () => ({
   },
   envPrefix: ["VITE_", "TAURI_ENV_*"],
   build: {
-    target: process.env.TAURI_ENV_PLATFORM == "windows" ? "chrome105" : "safari13",
+    target: process.env.TAURI_ENV_PLATFORM == "windows" ? "chrome105" : "safari16",
     minify: !process.env.TAURI_ENV_DEBUG ? "esbuild" : false,
     sourcemap: !!process.env.TAURI_ENV_DEBUG,
     rollupOptions: {
@@ -45,6 +45,7 @@ export default defineConfig(async () => ({
   },
   test: {
     environment: "jsdom",
+    globals: true,
     setupFiles: ["./tests/setup.ts"],
   },
 }));
