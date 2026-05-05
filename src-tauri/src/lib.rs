@@ -3,6 +3,7 @@ pub mod adapters;
 pub mod session;
 pub mod character;
 pub mod installer;
+pub mod commands;
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
