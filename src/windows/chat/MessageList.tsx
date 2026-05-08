@@ -37,6 +37,10 @@ export function MessageList({ messages }: Props) {
             fontSize: 14,
             whiteSpace: "pre-wrap",
             wordBreak: "break-word",
+            // Pending placeholder: visually distinct so the user sees that
+            // their send is in progress (not the window frozen).
+            opacity: m.pending ? 0.65 : 1,
+            fontStyle: m.pending ? "italic" : "normal",
           }}
         >
           {m.content}

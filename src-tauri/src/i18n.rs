@@ -10,6 +10,7 @@ pub struct Strings {
     pub char_guide: &'static str,
     pub settings: &'static str,
     pub history: &'static str,
+    pub talk: &'static str,
     pub quit: &'static str,
     // macOS app menu
     pub about: &'static str,
@@ -39,6 +40,7 @@ pub fn strings(lang: &Lang) -> Strings {
             char_guide:   "角色製作說明",
             settings:     "設定",
             history:      "對話記錄",
+            talk:         "開始對話",
             quit:         "退出",
             about:        "關於 Desktop Pet",
             hide:         "隱藏 Desktop Pet",
@@ -64,6 +66,7 @@ pub fn strings(lang: &Lang) -> Strings {
             char_guide:   "Character Guide",
             settings:     "Settings",
             history:      "Chat History",
+            talk:         "Open Chat",
             quit:         "Quit",
             about:        "About Desktop Pet",
             hide:         "Hide Desktop Pet",

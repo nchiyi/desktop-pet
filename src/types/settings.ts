@@ -10,6 +10,7 @@ export type CliTool = "Claude" | "Gemini" | "Codex";
 
 export interface AppConfig {
   hotkey: string;
+  toggle_hotkey: string;
   movement_mode: MovementMode;
   active_character: string;
   character_size: number;
@@ -27,10 +28,12 @@ export interface AppConfig {
   cli_path_override: string | null;
   reply_language: string;
   language: string;  // "system" | "zh-TW" | "en"
+  always_on_top: boolean;
 }
 
 export const DEFAULT_CONFIG: AppConfig = {
   hotkey: "Alt+Space",
+  toggle_hotkey: "Alt+Shift+H",
   movement_mode: "FullScreen",
   active_character: "default",
   character_size: 80,
@@ -48,4 +51,5 @@ export const DEFAULT_CONFIG: AppConfig = {
   cli_path_override: null,
   reply_language: "繁體中文",
   language: "system",
+  always_on_top: true,
 };

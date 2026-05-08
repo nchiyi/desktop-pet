@@ -30,6 +30,11 @@ impl Default for CliTool {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct AppConfig {
     pub hotkey: String,
+    /// Hotkey to toggle pet character visibility on/off.
+    /// `#[serde(default)]` so older config.toml files (created before this
+    /// field existed) still parse — they'll fall back to `default_toggle_hotkey()`.
+    #[serde(default = "default_toggle_hotkey")]
+    pub toggle_hotkey: String,
     pub movement_mode: MovementMode,
     pub active_character: String,
     pub character_size: u32,
@@ -47,12 +52,16 @@ pub struct AppConfig {
     pub cli_path_override: Option<String>,
     pub reply_language: String,
     pub language: String,  // "system" | "zh-TW" | "en"
+    pub always_on_top: bool,
 }
+
+fn default_toggle_hotkey() -> String { "Alt+Shift+H".into() }
 
 impl Default for AppConfig {
     fn default() -> Self {
         Self {
             hotkey: "Alt+Space".into(),
+            toggle_hotkey: default_toggle_hotkey(),
             movement_mode: MovementMode::FullScreen,
             active_character: "donghae".into(),
             character_size: 80,
@@ -70,6 +79,7 @@ impl Default for AppConfig {
             cli_path_override: None,
             reply_language: "繁體中文".into(),
             language: "system".to_string(),
+            always_on_top: true,
         }
     }
 }
