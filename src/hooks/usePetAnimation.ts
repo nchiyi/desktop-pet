@@ -11,6 +11,13 @@ export function usePetAnimation() {
 
   const interactionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const varietyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // After loadAnim plays the dynamic GIF, this timer flips to <anim>_static if
+  // such a file exists, so e.g. sit.gif's transition stops looping and the
+  // character stays in the seated still frame.
+  const staticSwapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Time the dynamic GIF plays before swapping to its _static variant. Roughly
+  // matches one cycle of a typical 4-frame, 8-fps sprite.
+  const STATIC_SWAP_MS = 1500;
   // True while any non-movement animation is occupying the slot
   const interactionActiveRef = useRef(false);
   // Stable ref so timeout callbacks always call the latest runIdleCycle
@@ -20,10 +27,23 @@ export function usePetAnimation() {
 
   const loadAnim = useCallback(async (state: AnimationState) => {
     setAnimState(state);
+    if (staticSwapTimerRef.current) {
+      clearTimeout(staticSwapTimerRef.current);
+      staticSwapTimerRef.current = null;
+    }
     try {
       const path = await invoke<string>("get_animation_path", { animName: state });
       setAnimPath(path);
     } catch {}
+    // After the GIF has had a chance to play one cycle, check whether the
+    // character ships a `<state>_static.<ext>` and swap to it. No-op if the
+    // file doesn't exist (Rust returns "").
+    staticSwapTimerRef.current = setTimeout(async () => {
+      try {
+        const staticPath = await invoke<string>("get_animation_static_path", { animName: state });
+        if (staticPath) setAnimPath(staticPath);
+      } catch {}
+    }, STATIC_SWAP_MS);
   }, []);
 
   /**
@@ -133,6 +153,7 @@ export function usePetAnimation() {
   useEffect(() => () => {
     if (interactionTimerRef.current) clearTimeout(interactionTimerRef.current);
     if (varietyTimerRef.current) clearTimeout(varietyTimerRef.current);
+    if (staticSwapTimerRef.current) clearTimeout(staticSwapTimerRef.current);
   }, []);
 
   return {

@@ -143,6 +143,17 @@ export function usePetMovement(
         return;
       }
 
+      // Hold position while user is conversing: either typing (inputVisible)
+      // or waiting for a reply (loadingBubble). The character should look
+      // attentive, not wander off mid-sentence.
+      const ps = usePetStore.getState();
+      if (ps.loadingBubble || ps.inputVisible) {
+        setMoving(false);
+        lastTime = now;
+        rafRef.current = requestAnimationFrame(animate);
+        return;
+      }
+
       // Wait at current position until pause expires
       if (now < pauseUntilRef.current) {
         setMoving(false);

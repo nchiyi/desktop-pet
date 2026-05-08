@@ -353,9 +353,12 @@ pub fn start_cursor_tracker(app_handle: AppHandle) {
                 continue;
             }
 
-            // When input overlay is visible, keep click-through off.
-            // Use Acquire so we see the store from set_input_visible (Release).
-            if state.input_visible.load(Ordering::Acquire) {
+            // When input overlay is visible OR user is dragging the pet,
+            // keep click-through off. Use Acquire so we see the stores from
+            // set_input_visible / set_pet_dragging (both Release).
+            if state.input_visible.load(Ordering::Acquire)
+                || state.is_dragging.load(Ordering::Acquire)
+            {
                 if last_passthrough.load(Ordering::Relaxed) {
                     let _ = window.set_ignore_cursor_events(false);
                     last_passthrough.store(false, Ordering::Relaxed);

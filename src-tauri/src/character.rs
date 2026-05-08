@@ -1,6 +1,36 @@
 use anyhow::{bail, Context, Result};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
+
+const OVERRIDES_FILENAME: &str = "animations.toml";
+const IMAGE_EXTS: &[&str] = &["gif", "webp", "png", "jpg", "jpeg"];
+
+/// Per-character animation file overrides. Sits in `<char_dir>/animations.toml`.
+/// Filenames are relative to the character dir. Missing keys fall back to the
+/// auto-scan rules in [`CharacterMeta::animation_path`].
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct AnimationOverrides {
+    #[serde(default)]
+    pub overrides: HashMap<String, String>,
+}
+
+impl AnimationOverrides {
+    pub fn load(dir: &Path) -> Self {
+        let path = dir.join(OVERRIDES_FILENAME);
+        match std::fs::read_to_string(&path) {
+            Ok(s) => toml::from_str(&s).unwrap_or_default(),
+            Err(_) => Self::default(),
+        }
+    }
+
+    pub fn save(&self, dir: &Path) -> Result<()> {
+        let path = dir.join(OVERRIDES_FILENAME);
+        let s = toml::to_string_pretty(self)?;
+        std::fs::write(path, s)?;
+        Ok(())
+    }
+}
 
 pub const ANIMATION_NAMES: &[&str] = &[
     "idle", "walk", "run", "sit", "dance", "sway",
@@ -56,28 +86,77 @@ impl CharacterMeta {
     }
 
     /// Returns path to animation file, with fallback chain.
+    /// Priority: user override (animations.toml) → exact match → fallback chain → idle.
     pub fn animation_path(&self, anim: &str) -> PathBuf {
-        let exts = ["gif", "webp", "png"];
-        for ext in &exts {
+        let overrides = AnimationOverrides::load(&self.dir);
+        self.animation_path_with_overrides(anim, &overrides)
+    }
+
+    fn animation_path_with_overrides(
+        &self,
+        anim: &str,
+        overrides: &AnimationOverrides,
+    ) -> PathBuf {
+        // 1. Honor user override (relative path resolved against char dir)
+        if let Some(rel) = overrides.overrides.get(anim) {
+            let p = self.dir.join(rel);
+            if p.exists() { return p; }
+        }
+        // 2. Auto-scan exact match: <anim>.gif/webp/png
+        for ext in IMAGE_EXTS {
             let p = self.dir.join(format!("{}.{}", anim, ext));
             if p.exists() { return p; }
             let sprite = self.dir.join(format!("{}_sprite.png", anim));
             if sprite.exists() { return sprite; }
         }
-        // Try fallback chain
+        // 3. Try fallback chain
         for (from, to) in FALLBACK_CHAIN {
             if *from == anim {
-                return self.animation_path(to);
+                return self.animation_path_with_overrides(to, overrides);
             }
         }
-        // Final fallback: idle
+        // 4. Final fallback: idle
         if anim != "idle" {
-            return self.animation_path("idle");
+            return self.animation_path_with_overrides("idle", overrides);
         }
-        // Last resort: thumbnail
+        // 5. Last resort: thumbnail
         let thumb = self.dir.join("thumbnail.png");
         if thumb.exists() { return thumb; }
         self.dir.join("idle.gif")
+    }
+
+    /// Look for a `<anim>_static.<ext>` file in the character dir.
+    /// Used by the frontend to swap a sit/sleep GIF to a still frame after the
+    /// transition has finished, so the character looks "held" instead of
+    /// looping the sit-down motion forever.
+    pub fn animation_static_path(&self, anim: &str) -> Option<PathBuf> {
+        for ext in IMAGE_EXTS {
+            let p = self.dir.join(format!("{}_static.{}", anim, ext));
+            if p.exists() { return Some(p); }
+        }
+        None
+    }
+
+    /// List image files in the character dir for the picker UI.
+    /// Returns just filenames (relative), filtered by recognized extensions.
+    pub fn list_image_files(&self) -> Vec<String> {
+        let mut out = Vec::new();
+        let Ok(entries) = std::fs::read_dir(&self.dir) else { return out };
+        for entry in entries.flatten() {
+            if !entry.file_type().map(|t| t.is_file()).unwrap_or(false) { continue; }
+            let path = entry.path();
+            let ext_ok = path
+                .extension()
+                .and_then(|s| s.to_str())
+                .map(|e| IMAGE_EXTS.contains(&e.to_lowercase().as_str()))
+                .unwrap_or(false);
+            if !ext_ok { continue; }
+            if let Some(name) = path.file_name().and_then(|s| s.to_str()) {
+                out.push(name.to_string());
+            }
+        }
+        out.sort();
+        out
     }
 
     pub fn list_available(characters_dir: &Path) -> Vec<CharacterMeta> {

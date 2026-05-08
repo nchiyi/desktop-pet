@@ -95,6 +95,15 @@ export function PetApp() {
     invoke("set_input_visible", { visible: inputVisible }).catch(console.error);
   }, [inputVisible]);
 
+  // Mirror character drag state to Rust so the cursor tracker doesn't reactivate
+  // click-through mid-drag when the cursor outruns update_char_pos's 50 ms
+  // throttle. Subscribed via store rather than the destructure so the listener
+  // doesn't trigger needless re-renders elsewhere.
+  const isDraggingForRust = usePetStore((s) => s.isDragging);
+  useEffect(() => {
+    invoke("set_pet_dragging", { dragging: isDraggingForRust }).catch(console.error);
+  }, [isDraggingForRust]);
+
   // Disable WebView right-click context menu
   useEffect(() => {
     const prevent = (e: MouseEvent) => e.preventDefault();
@@ -194,6 +203,14 @@ export function PetApp() {
             (config.idle_anim_interval_max - config.idle_anim_interval_min)) *
         1000;
       current = setTimeout(async () => {
+        // Skip the idle phrase while user is mid-conversation: either thinking
+        // (loadingBubble) or about to type (inputVisible). Always reschedule
+        // so the timer keeps running once the conversation ends.
+        const s = usePetStore.getState();
+        if (s.loadingBubble || s.inputVisible) {
+          scheduleNext();
+          return;
+        }
         try {
           const phrases = await invoke<string[]>("get_idle_phrases");
           if (phrases.length > 0) {

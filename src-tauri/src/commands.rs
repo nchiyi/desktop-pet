@@ -2,10 +2,11 @@ use crate::adapters::{
     claude::ClaudeAdapter, gemini::GeminiAdapter, codex::CodexAdapter,
     CliAdapter, Message,
 };
-use crate::character::CharacterMeta;
+use crate::character::{AnimationOverrides, CharacterMeta};
 use crate::config::{AppConfig, CliTool};
 use crate::installer::{install_zip, open_characters_dir};
 use crate::session::Session;
+use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, AtomicI32, AtomicU64, Ordering};
@@ -34,6 +35,12 @@ pub struct AppState {
     pub char_y: AtomicI32,
     pub char_size: AtomicI32,
     pub input_visible: AtomicBool,
+    /// True while the user is dragging the pet character. The cursor tracker
+    /// must keep `set_ignore_cursor_events(false)` regardless of the cursor's
+    /// current position relative to the (50 ms-stale) char rect — otherwise a
+    /// fast drag outruns `update_char_pos` and click-through reactivates,
+    /// breaking the drag mid-flight.
+    pub is_dragging: AtomicBool,
     // Primary monitor work-area in logical CSS pixels (excludes Dock / Menu Bar)
     // Stored after setup so JS can fetch accurate movement bounds.
     pub work_x: AtomicI32,
@@ -56,6 +63,7 @@ impl AppState {
             char_y: AtomicI32::new(100),
             char_size: AtomicI32::new(80),
             input_visible: AtomicBool::new(false),
+            is_dragging: AtomicBool::new(false),
             // Sensible fallback; overwritten in setup once the real monitor is known
             work_x: AtomicI32::new(0),
             work_y: AtomicI32::new(0),
@@ -336,6 +344,78 @@ pub fn get_animation_path(state: State<AppState>, anim_name: String) -> String {
     }
 }
 
+/// Returns the base64 data URL of `<active_char>/<anim>_static.<ext>` if the
+/// character has dropped in such a file, or "" if not. The frontend uses this
+/// to swap the GIF source after the transition has played, so e.g. `sit.gif`
+/// shows the sit-down motion and then freezes on `sit_static.png`.
+#[tauri::command]
+pub fn get_animation_static_path(state: State<AppState>, anim_name: String) -> String {
+    use base64::{Engine as _, engine::general_purpose::STANDARD};
+
+    let config = state.config.lock().unwrap();
+    let characters_dir = AppConfig::app_data_dir().join("characters");
+    let char_dir = characters_dir.join(&config.active_character);
+    drop(config);
+
+    let Ok(meta) = CharacterMeta::load(&char_dir) else { return String::new() };
+    let Some(path) = meta.animation_static_path(&anim_name) else { return String::new() };
+
+    let ext = path.extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("png")
+        .to_lowercase();
+    let mime = match ext.as_str() {
+        "gif"  => "image/gif",
+        "webp" => "image/webp",
+        "jpg" | "jpeg" => "image/jpeg",
+        _      => "image/png",
+    };
+
+    match std::fs::read(&path) {
+        Ok(bytes) => format!("data:{};base64,{}", mime, STANDARD.encode(&bytes)),
+        Err(_)    => String::new(),
+    }
+}
+
+/// List image files (gif/webp/png/jpg) in a character's directory, used to
+/// populate the picker dropdown in the Settings → Animation tab. Empty list
+/// if the character doesn't exist or can't be read.
+#[tauri::command]
+pub fn list_character_files(char_name: String) -> Vec<String> {
+    let char_dir = AppConfig::app_data_dir().join("characters").join(&char_name);
+    let Ok(meta) = CharacterMeta::load(&char_dir) else { return Vec::new() };
+    meta.list_image_files()
+}
+
+/// Returns the saved animation file overrides for the given character, or an
+/// empty map if the character has no `animations.toml` yet.
+#[tauri::command]
+pub fn get_animation_overrides(char_name: String) -> HashMap<String, String> {
+    let char_dir = AppConfig::app_data_dir().join("characters").join(&char_name);
+    AnimationOverrides::load(&char_dir).overrides
+}
+
+/// Set or clear a single animation override for the given character. Pass
+/// `Some(filename)` to override `<anim>` to a specific file (relative to the
+/// character dir), or `None` to remove the override and fall back to auto-scan.
+#[tauri::command]
+pub fn set_animation_override(
+    char_name: String,
+    anim: String,
+    file: Option<String>,
+) -> Result<(), String> {
+    let char_dir = AppConfig::app_data_dir().join("characters").join(&char_name);
+    if !char_dir.exists() {
+        return Err(format!("character not found: {char_name}"));
+    }
+    let mut state = AnimationOverrides::load(&char_dir);
+    match file {
+        Some(f) if !f.trim().is_empty() => { state.overrides.insert(anim, f); }
+        _                               => { state.overrides.remove(&anim); }
+    }
+    state.save(&char_dir).map_err(|e| e.to_string())
+}
+
 #[tauri::command]
 pub fn get_idle_phrases() -> Vec<String> {
     let content = include_str!("../../assets/idle_phrases.toml");
@@ -403,6 +483,16 @@ pub fn update_char_pos(state: State<'_, AppState>, x: i32, y: i32, size: i32) {
     state.char_x.store(x, Ordering::Relaxed);
     state.char_y.store(y, Ordering::Relaxed);
     state.char_size.store(size, Ordering::Relaxed);
+}
+
+/// Called by frontend when the user starts/ends dragging the pet character.
+/// The cursor-tracker thread checks this and refuses to re-enable click-through
+/// while a drag is in flight, even if `update_char_pos` (50 ms throttle) hasn't
+/// caught up to the cursor's new position. Without this guard a fast drag
+/// outruns the throttle and the OS reactivates click-through, killing the drag.
+#[tauri::command]
+pub fn set_pet_dragging(state: State<'_, AppState>, dragging: bool) {
+    state.is_dragging.store(dragging, Ordering::Release);
 }
 
 /// Called by frontend when input overlay opens/closes.
