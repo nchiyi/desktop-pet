@@ -115,12 +115,20 @@ export function usePetAnimation() {
   // React to movement changes: switch walk/idle and start/stop the idle cycle
   useEffect(() => {
     if (isMoving) {
-      // Cancel any pending variety timer; let a running animation finish on its own
+      // Movement starts → preempt any in-flight variety animation (sit/dance/
+      // happy/think) and switch to walk immediately. Without this the user
+      // sees the character gliding around still showing the sit-down GIF until
+      // its 2–5 s timer expires, which looks broken.
       if (varietyTimerRef.current) {
         clearTimeout(varietyTimerRef.current);
         varietyTimerRef.current = null;
       }
-      if (!interactionActiveRef.current) loadAnim("walk");
+      if (interactionTimerRef.current) {
+        clearTimeout(interactionTimerRef.current);
+        interactionTimerRef.current = null;
+      }
+      interactionActiveRef.current = false;
+      loadAnim("walk");
     } else {
       // Arrived at destination (or app start / Fixed mode)
       if (!interactionActiveRef.current) {

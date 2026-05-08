@@ -111,12 +111,15 @@ export function Animation() {
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           {ANIMATIONS.map(({ key, label }) => {
             const override = overrides[key];
+            const staticKey = `${key}_static`;
+            const staticOverride = overrides[staticKey];
             const auto = autoFor(key);
             const stat = staticFor(key);
             const dirs = (key === "walk" || key === "run") ? directionalFor(key) : null;
             const current = override ?? "";
+            const currentStatic = staticOverride ?? "";
             return (
-              <div key={key} style={{ display: "grid", gridTemplateColumns: "84px 1fr 1.4fr", alignItems: "center", gap: 8, fontSize: 12 }}>
+              <div key={key} style={{ display: "grid", gridTemplateColumns: "84px 1fr 1fr 1.3fr", alignItems: "center", gap: 8, fontSize: 12 }}>
                 <span style={{ fontWeight: 500 }}>
                   {label}
                   <span style={{ color: "#aaa", marginLeft: 4, fontSize: 11 }}>{key}</span>
@@ -124,18 +127,31 @@ export function Animation() {
                 <select
                   value={current}
                   onChange={(e) => handleChange(key, e.target.value)}
+                  title="動作主圖（GIF / 過程動畫）"
                   style={{ padding: "4px 6px", borderRadius: 6, border: "1px solid #ddd", fontSize: 12 }}
                 >
                   <option value="">
-                    {auto ? `(自動：${auto})` : "(無檔，使用後備)"}
+                    {auto ? `動：${auto}` : "(動：無，使用後備)"}
+                  </option>
+                  {files.map((f) => (
+                    <option key={f} value={f}>{f}</option>
+                  ))}
+                </select>
+                <select
+                  value={currentStatic}
+                  onChange={(e) => handleChange(staticKey, e.target.value)}
+                  title="靜態保持圖（動作播 1.5s 後切到此圖；空 = 持續循環 GIF）"
+                  style={{ padding: "4px 6px", borderRadius: 6, border: "1px solid #ddd", fontSize: 12, background: currentStatic || stat ? "#f5fff5" : "#fffaf5" }}
+                >
+                  <option value="">
+                    {stat ? `靜：${stat}` : "(靜：無，gif 持續循環)"}
                   </option>
                   {files.map((f) => (
                     <option key={f} value={f}>{f}</option>
                   ))}
                 </select>
                 <span style={{ fontSize: 11, color: "#888" }}>
-                  預期：<code>{key}.gif/.webp/.png</code>
-                  {stat ? <> · 靜態：<code>{stat}</code> ✓</> : null}
+                  預期：<code>{key}.gif</code> + <code>{key}_static.png</code>
                   {dirs ? (
                     <>
                       <br />方向：

@@ -147,11 +147,18 @@ impl CharacterMeta {
         self.dir.join("idle.gif")
     }
 
-    /// Look for a `<anim>_static.<ext>` file in the character dir.
-    /// Used by the frontend to swap a sit/sleep GIF to a still frame after the
-    /// transition has finished, so the character looks "held" instead of
+    /// Look for a `<anim>_static.<ext>` file in the character dir, or a user
+    /// override mapped under the `<anim>_static` key in animations.toml.
+    /// Used by the frontend to swap a sit/sleep GIF to a still frame after
+    /// the transition has finished, so the character looks "held" instead of
     /// looping the sit-down motion forever.
     pub fn animation_static_path(&self, anim: &str) -> Option<PathBuf> {
+        let overrides = AnimationOverrides::load(&self.dir);
+        let key = format!("{}_static", anim);
+        if let Some(rel) = overrides.overrides.get(&key) {
+            let p = self.dir.join(rel);
+            if p.exists() { return Some(p); }
+        }
         for ext in IMAGE_EXTS {
             let p = self.dir.join(format!("{}_static.{}", anim, ext));
             if p.exists() { return Some(p); }
