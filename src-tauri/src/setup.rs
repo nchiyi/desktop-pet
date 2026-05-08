@@ -132,6 +132,14 @@ pub fn bootstrap_path_async() {
 
 /// Copy all bundled characters to app data dir on first launch.
 pub fn init_app_data(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
+    // Prune old daily chat logs on startup. Keep last 3 days only.
+    // Failures are non-fatal: a permission issue or partial cleanup must not
+    // prevent the app from starting.
+    let logs_dir = AppConfig::app_data_dir().join("logs");
+    if let Err(e) = crate::daily_log::cleanup_old_logs(&logs_dir, 3) {
+        eprintln!("daily_log cleanup failed: {e}");
+    }
+
     let resource_path = app.path().resource_dir()?;
     let bundled_chars = resource_path.join("assets").join("characters");
     let dest_chars = AppConfig::app_data_dir().join("characters");

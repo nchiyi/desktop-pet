@@ -10,8 +10,17 @@ interface Props {
 export function InputOverlay({ onPromptSent, onReplyReceived }: Props) {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const { inputVisible, setInputVisible, showBubble, setLoadingBubble } = usePetStore();
+  const {
+    inputVisible,
+    setInputVisible,
+    showBubble,
+    setLoadingBubble,
+    inputPosition,
+    setInputPosition,
+  } = usePetStore();
   const inputRef = useRef<HTMLInputElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const dragCleanupRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     if (!inputVisible) return;
@@ -23,11 +32,14 @@ export function InputOverlay({ onPromptSent, onReplyReceived }: Props) {
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, [inputVisible]);
 
-  // No more 4-s setInterval (it caused visible flicker when the bubble's own
-  // auto-expire fired before the next re-issue). The persistent "思考中…"
-  // bubble is rendered by PetApp from the loadingBubble flag and stays put
-  // until either showBubble(response) replaces it or setLoadingBubble(false)
-  // dismisses it on error.
+  // Tear down any in-flight drag listeners on unmount (e.g. user pressed Esc
+  // mid-drag) so they don't outlive the component and corrupt state.
+  useEffect(() => {
+    return () => {
+      dragCleanupRef.current?.();
+      dragCleanupRef.current = null;
+    };
+  }, []);
 
   if (!inputVisible) return null;
 
@@ -58,8 +70,49 @@ export function InputOverlay({ onPromptSent, onReplyReceived }: Props) {
     }
   };
 
+  const handleDragStart = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const root = rootRef.current;
+    if (!root) return;
+    const rect = root.getBoundingClientRect();
+    const dragOffsetX = e.clientX - rect.left;
+    const dragOffsetY = e.clientY - rect.top;
+    const w = rect.width;
+    const h = rect.height;
+
+    // Defensively unbind any leftover pair from a previous drag that didn't
+    // see its mouseup (rare — duplicate mousedown, simultaneous events, etc).
+    dragCleanupRef.current?.();
+
+    const prevCursor = document.body.style.cursor;
+    document.body.style.cursor = "grabbing";
+
+    const onMove = (ev: MouseEvent) => {
+      const rawX = ev.clientX - dragOffsetX;
+      const rawY = ev.clientY - dragOffsetY;
+      const x = Math.max(0, Math.min(rawX, window.innerWidth - w));
+      const y = Math.max(0, Math.min(rawY, window.innerHeight - h));
+      setInputPosition({ x, y });
+    };
+    const onUp = () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      document.body.style.cursor = prevCursor;
+      dragCleanupRef.current = null;
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    dragCleanupRef.current = () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      document.body.style.cursor = prevCursor;
+    };
+  };
+
   return (
     <div
+      ref={rootRef}
       onMouseDown={(e) => {
         // Clicking padding/whitespace should still focus the input — without this
         // the user has to hit the small <input> rectangle exactly. Stop the click
@@ -72,53 +125,66 @@ export function InputOverlay({ onPromptSent, onReplyReceived }: Props) {
       }}
       style={{
         position: "fixed",
-        bottom: 80,
-        left: "50%",
-        transform: "translateX(-50%)",
+        ...(inputPosition
+          ? { left: inputPosition.x, top: inputPosition.y, transform: "none" }
+          : { bottom: 80, left: "50%", transform: "translateX(-50%)" }),
         background: "rgba(255,255,255,0.97)",
         borderRadius: 16,
-        padding: "10px 14px",
         boxShadow: "0 4px 24px rgba(0,0,0,0.18)",
         display: "flex",
-        gap: 8,
+        flexDirection: "column",
         zIndex: 9999,
         minWidth: 300,
         cursor: "text",
+        overflow: "hidden",
       }}
     >
-      <input
-        ref={inputRef}
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") handleSend();
-          if (e.key === "Escape") setInputVisible(false);
-        }}
-        placeholder="問我任何問題..."
+      <div
+        data-testid="input-drag-handle"
+        onMouseDown={handleDragStart}
         style={{
-          flex: 1,
-          border: "none",
-          outline: "none",
-          fontSize: 14,
-          background: "transparent",
+          height: 6,
+          background: "#d0d0d0",
+          cursor: "grab",
+          borderTopLeftRadius: 16,
+          borderTopRightRadius: 16,
         }}
-        disabled={loading}
       />
-      <button
-        onClick={handleSend}
-        disabled={loading || !input.trim()}
-        style={{
-          background: "#4A90D9",
-          color: "#fff",
-          border: "none",
-          borderRadius: 8,
-          padding: "4px 12px",
-          cursor: "pointer",
-          fontSize: 13,
-        }}
-      >
-        {loading ? "…" : "送出"}
-      </button>
+      <div style={{ display: "flex", gap: 8, padding: "10px 14px" }}>
+        <input
+          ref={inputRef}
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") handleSend();
+            if (e.key === "Escape") setInputVisible(false);
+          }}
+          placeholder="問我任何問題..."
+          style={{
+            flex: 1,
+            border: "none",
+            outline: "none",
+            fontSize: 14,
+            background: "transparent",
+          }}
+          disabled={loading}
+        />
+        <button
+          onClick={handleSend}
+          disabled={loading || !input.trim()}
+          style={{
+            background: "#4A90D9",
+            color: "#fff",
+            border: "none",
+            borderRadius: 8,
+            padding: "4px 12px",
+            cursor: "pointer",
+            fontSize: 13,
+          }}
+        >
+          {loading ? "…" : "送出"}
+        </button>
+      </div>
     </div>
   );
 }

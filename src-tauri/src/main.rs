@@ -13,6 +13,7 @@ fn main() {
 
     tauri::Builder::default()
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             Some(vec![]),
@@ -72,6 +73,8 @@ fn main() {
             tauri_app_lib::commands::update_char_pos,
             tauri_app_lib::commands::set_input_visible,
             tauri_app_lib::commands::get_screen_info,
+            tauri_app_lib::commands::read_daily_log,
+            tauri_app_lib::commands::export_session,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

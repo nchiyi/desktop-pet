@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { useTranslation } from "react-i18next";
 import { MessageList } from "./MessageList";
 import { useSessionStore } from "../../stores/sessionStore";
 import { useSessionSync } from "../../hooks/useSessionSync";
@@ -17,14 +18,39 @@ function btnStyle(bg: string): React.CSSProperties {
   };
 }
 
+function formatTodayMessages(messages: Message[]): string {
+  const lines: string[] = [];
+  for (let i = 0; i < messages.length; i += 2) {
+    const u = messages[i];
+    const a = messages[i + 1];
+    if (!u) continue;
+    lines.push(`👤 你：${u.content}`);
+    if (a) lines.push(`🤖 寵物：${a.content}`);
+    lines.push("");
+  }
+  return lines.join("\n");
+}
+
+function exportFileNameFor(viewDay: 0 | -1 | -2): string {
+  const d = new Date();
+  d.setDate(d.getDate() + viewDay);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `desktop-pet-chat-${yyyy}-${mm}-${dd}.txt`;
+}
+
 export function ChatApp() {
   useSessionSync();
+  const { t } = useTranslation();
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   // Optimistic placeholder shown immediately after Enter so the user sees
   // their message + a "思考中…" reply while the CLI is running. Cleared
   // when the corresponding pair lands in the synced session, or on error.
   const [pendingPrompt, setPendingPrompt] = useState<string | null>(null);
+  const [viewDay, setViewDay] = useState<0 | -1 | -2>(0);
+  const [historyText, setHistoryText] = useState("");
   const { messages, addExchange, atTurnLimit, reset } = useSessionStore();
 
   // Drop the pending placeholder once the synced session contains the prompt.
@@ -37,6 +63,23 @@ export function ChatApp() {
       setPendingPrompt(null);
     }
   }, [messages, pendingPrompt]);
+
+  // Load historical log when viewing a past day.
+  useEffect(() => {
+    if (viewDay === 0) return;
+    let cancelled = false;
+    invoke<string>("read_daily_log", { day: viewDay })
+      .then((s) => { if (!cancelled) setHistoryText(s); })
+      .catch(() => { if (!cancelled) setHistoryText(""); });
+    return () => { cancelled = true; };
+  }, [viewDay]);
+
+  // Drop optimistic placeholder when switching off Today.
+  useEffect(() => {
+    if (viewDay !== 0) setPendingPrompt(null);
+  }, [viewDay]);
+
+  const isReadOnly = viewDay !== 0;
 
   const displayMessages = useMemo<Message[]>(() => {
     if (!pendingPrompt) return messages;
@@ -89,6 +132,19 @@ export function ChatApp() {
     setPendingPrompt(null);
   };
 
+  const handleExport = async () => {
+    const content = viewDay === 0 ? formatTodayMessages(messages) : historyText;
+    if (!content.trim()) return;
+    try {
+      await invoke("export_session", {
+        content,
+        defaultName: exportFileNameFor(viewDay),
+      });
+    } catch (e) {
+      console.error("export failed", e);
+    }
+  };
+
   return (
     <div
       style={{
@@ -104,12 +160,53 @@ export function ChatApp() {
           borderBottom: "1px solid #eee",
           fontWeight: 600,
           fontSize: 15,
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
         }}
       >
-        對話記錄
+        <span>對話記錄</span>
+        <div style={{ display: "flex", gap: 4 }}>
+          {([
+            [0, t("chat.tab_today")],
+            [-1, t("chat.tab_yesterday")],
+            [-2, t("chat.tab_day_before")],
+          ] as const).map(([day, label]) => (
+            <button
+              key={day}
+              onClick={() => setViewDay(day as 0 | -1 | -2)}
+              style={{
+                background: viewDay === day ? "#4A90D9" : "#eee",
+                color: viewDay === day ? "#fff" : "#333",
+                border: "none",
+                borderRadius: 6,
+                padding: "4px 10px",
+                cursor: "pointer",
+                fontSize: 12,
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <div style={{ flex: 1 }} />
+        <button
+          onClick={handleExport}
+          style={{
+            background: "#eee",
+            color: "#333",
+            border: "none",
+            borderRadius: 6,
+            padding: "4px 10px",
+            cursor: "pointer",
+            fontSize: 12,
+          }}
+        >
+          {t("chat.export")}
+        </button>
       </div>
 
-      {atTurnLimit() && (
+      {!isReadOnly && atTurnLimit() && (
         <div
           style={{
             background: "#FFF3CD",
@@ -130,7 +227,22 @@ export function ChatApp() {
         </div>
       )}
 
-      <MessageList messages={displayMessages} />
+      {isReadOnly ? (
+        <div style={{
+          flex: 1,
+          overflowY: "auto",
+          padding: 16,
+          fontSize: 13,
+          whiteSpace: "pre-wrap",
+          fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+        }}>
+          {historyText.trim() === ""
+            ? <div style={{ color: "#999" }}>{t("chat.no_log_for_day")}</div>
+            : historyText}
+        </div>
+      ) : (
+        <MessageList messages={displayMessages} />
+      )}
 
       <div
         style={{
@@ -149,7 +261,7 @@ export function ChatApp() {
               handleSend();
             }
           }}
-          placeholder={loading ? "思考中…請稍候" : "輸入訊息..."}
+          placeholder={isReadOnly ? t("chat.readonly_placeholder") : (loading ? "思考中…請稍候" : "輸入訊息...")}
           style={{
             flex: 1,
             border: "1.5px solid #ddd",
@@ -159,11 +271,11 @@ export function ChatApp() {
             outline: "none",
             background: loading ? "#f5f5f5" : "#fff",
           }}
-          disabled={loading}
+          disabled={loading || isReadOnly}
         />
         <button
           onClick={handleSend}
-          disabled={loading || !input.trim()}
+          disabled={loading || !input.trim() || isReadOnly}
           style={btnStyle("#4A90D9")}
         >
           {loading ? "思考中…" : "送出"}

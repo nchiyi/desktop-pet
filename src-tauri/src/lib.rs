@@ -8,3 +8,4 @@ pub mod tray;
 pub mod setup;
 pub mod i18n;
 pub mod app_menu;
+pub mod daily_log;

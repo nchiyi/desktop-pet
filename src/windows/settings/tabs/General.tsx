@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
+import { emit } from "@tauri-apps/api/event";
 import { useSettingsStore } from "../../../stores/settingsStore";
 
 const labelStyle: React.CSSProperties = { display: "flex", flexDirection: "column", gap: 6, fontSize: 13 };
@@ -135,6 +136,52 @@ export function General() {
           </label>
         </div>
       )}
+
+      <label style={labelStyle}>
+        <span>{t("settings.input_position_label")}</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <button
+            onClick={() => { void emit("reset-input-position"); }}
+            style={{
+              background: "#4A90D9",
+              color: "#fff",
+              border: "none",
+              borderRadius: 8,
+              padding: "6px 14px",
+              cursor: "pointer",
+              fontSize: 13,
+            }}
+          >
+            {t("settings.input_position_reset")}
+          </button>
+          <span style={{ fontSize: 11, color: "#888" }}>
+            {t("settings.input_position_hint")}
+          </span>
+        </div>
+      </label>
+
+      <label style={labelStyle}>
+        <span>{t("settings.open_chat_history")}</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <button
+            onClick={() => { void invoke("show_chat_window"); }}
+            style={{
+              background: "#4A90D9",
+              color: "#fff",
+              border: "none",
+              borderRadius: 8,
+              padding: "6px 14px",
+              cursor: "pointer",
+              fontSize: 13,
+            }}
+          >
+            {t("settings.open_chat_history")}
+          </button>
+          <span style={{ fontSize: 11, color: "#888" }}>
+            {t("settings.open_chat_history_hint")}
+          </span>
+        </div>
+      </label>
     </div>
   );
 }

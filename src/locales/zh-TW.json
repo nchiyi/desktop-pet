@@ -21,7 +21,12 @@
     "night_start": "開始時間",
     "night_end": "結束時間",
     "save": "儲存",
-    "saved": "已儲存"
+    "saved": "已儲存",
+    "input_position_label": "對話框位置",
+    "input_position_reset": "重置為預設位置",
+    "input_position_hint": "對話框拖到自訂位置後，可從這裡重置回底部置中",
+    "open_chat_history": "開啟對話紀錄",
+    "open_chat_history_hint": "查看今天 / 昨天 / 前天的對話"
   },
   "chat": {
     "title": "對話記錄",
@@ -30,7 +35,13 @@
     "reset": "重新開始",
     "summarize": "總結",
     "keep_going": "繼續聊",
-    "turn_warning": "我們聊了很多了！要幫你總結這段對話嗎？"
+    "turn_warning": "我們聊了很多了！要幫你總結這段對話嗎？",
+    "tab_today": "今天",
+    "tab_yesterday": "昨天",
+    "tab_day_before": "前天",
+    "readonly_placeholder": "歷史紀錄為唯讀",
+    "no_log_for_day": "該日無對話紀錄",
+    "export": "匯出"
   },
   "guide": {
     "title": "角色製作說明",

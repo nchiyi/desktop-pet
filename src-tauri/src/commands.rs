@@ -215,10 +215,20 @@ pub async fn send_message(
 
     let response = send_result.map_err(|e| e.to_string())?;
 
+    // Capture the user prompt before add_exchange takes ownership of it.
+    let user_prompt_for_log = prompt.clone();
     state.session.lock().unwrap().add_exchange(prompt, response.clone());
 
     let sessions_dir = AppConfig::app_data_dir().join("sessions");
     let _ = state.session.lock().unwrap().save(&sessions_dir);
+
+    // Append to the human-readable per-day log. Failures are non-fatal:
+    // the active conversation already lives in `Session`, so a failed log
+    // write should never abort the response that's about to be returned.
+    let logs_dir = AppConfig::app_data_dir().join("logs");
+    if let Err(e) = crate::daily_log::append_entry(&logs_dir, &user_prompt_for_log, &response) {
+        eprintln!("daily_log append failed: {e}");
+    }
 
     // Notify every window so each has the chance to re-fetch the canonical
     // session from Rust. Without this, pet/chat windows hold divergent histories
@@ -437,4 +447,29 @@ pub fn get_screen_info(state: State<'_, AppState>) -> ScreenInfo {
         work_w: state.work_w.load(Ordering::Relaxed),
         work_h: state.work_h.load(Ordering::Relaxed),
     }
+}
+
+#[tauri::command]
+pub fn read_daily_log(day: i32) -> Result<String, String> {
+    let logs_dir = AppConfig::app_data_dir().join("logs");
+    crate::daily_log::read_for_day(&logs_dir, day).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn export_session(
+    app: tauri::AppHandle,
+    content: String,
+    default_name: String,
+) -> Result<(), String> {
+    use tauri_plugin_dialog::DialogExt;
+    let (tx, rx) = tokio::sync::oneshot::channel();
+    app.dialog()
+        .file()
+        .set_file_name(&default_name)
+        .add_filter("Text", &["txt"])
+        .save_file(move |path| { let _ = tx.send(path); });
+    let path = rx.await.map_err(|e| e.to_string())?;
+    let Some(path) = path else { return Ok(()); };
+    let path = path.into_path().map_err(|e| e.to_string())?;
+    std::fs::write(path, content).map_err(|e| e.to_string())
 }

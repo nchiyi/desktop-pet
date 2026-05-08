@@ -64,6 +64,11 @@ interface PetState {
    *  InputOverlay flips this on at send and off when the response arrives. */
   loadingBubble: boolean;
   inputVisible: boolean;
+  /** Custom drag-positioned coords for InputOverlay. null = use default
+   *  bottom-center placement. In-memory only — resets on app restart. */
+  inputPosition: { x: number; y: number } | null;
+  setInputPosition: (pos: { x: number; y: number }) => void;
+  resetInputPosition: () => void;
   setAnimState: (s: AnimationState) => void;
   setPosition: (p: Position | ((prev: Position) => Position)) => void;
   setDragging: (v: boolean) => void;
@@ -90,6 +95,9 @@ export const usePetStore = create<PetState>((set) => ({
   bubbleToken: 0,
   loadingBubble: false,
   inputVisible: false,
+  inputPosition: null,
+  setInputPosition: (inputPosition) => set({ inputPosition }),
+  resetInputPosition: () => set({ inputPosition: null }),
   setAnimState: (animState) => set({ animState }),
   setPosition: (p) =>
     set((s) => ({ position: typeof p === "function" ? p(s.position) : p })),

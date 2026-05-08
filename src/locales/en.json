@@ -21,7 +21,12 @@
     "night_start": "Start Time",
     "night_end": "End Time",
     "save": "Save",
-    "saved": "Saved"
+    "saved": "Saved",
+    "input_position_label": "Input Box Position",
+    "input_position_reset": "Reset to Default",
+    "input_position_hint": "After dragging the input box, click here to restore bottom-center placement",
+    "open_chat_history": "Open Chat History",
+    "open_chat_history_hint": "Browse today / yesterday / day-before-yesterday conversations"
   },
   "chat": {
     "title": "Chat History",
@@ -30,7 +35,13 @@
     "reset": "New Session",
     "summarize": "Summarize",
     "keep_going": "Keep Going",
-    "turn_warning": "We've chatted a lot! Want me to summarize this conversation?"
+    "turn_warning": "We've chatted a lot! Want me to summarize this conversation?",
+    "tab_today": "Today",
+    "tab_yesterday": "Yesterday",
+    "tab_day_before": "Day Before",
+    "readonly_placeholder": "History is read-only",
+    "no_log_for_day": "No conversation on this day",
+    "export": "Export"
   },
   "guide": {
     "title": "Character Guide",

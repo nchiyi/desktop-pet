@@ -41,15 +41,20 @@ export function PetApp() {
   useEffect(() => { load(); }, [load]);
 
   // Reload config whenever settings window saves changes; also handle tray "Open Chat"
+  // and Settings page "Reset Input Position" button.
   useEffect(() => {
     let unlistenConfig: (() => void) | undefined;
     let unlistenInput: (() => void) | undefined;
+    let unlistenResetPos: (() => void) | undefined;
     listen("config-updated", () => { load(); }).then(fn => { unlistenConfig = fn; });
     listen("open-input", () => {
       setInputVisible(true);
       getCurrentWindow().setFocus().catch(() => {});
     }).then(fn => { unlistenInput = fn; });
-    return () => { unlistenConfig?.(); unlistenInput?.(); };
+    listen("reset-input-position", () => {
+      usePetStore.getState().resetInputPosition();
+    }).then(fn => { unlistenResetPos = fn; });
+    return () => { unlistenConfig?.(); unlistenInput?.(); unlistenResetPos?.(); };
   }, [load, setInputVisible]);
 
   // Keep Rust cursor-tracker in sync with character position. Throttled to
