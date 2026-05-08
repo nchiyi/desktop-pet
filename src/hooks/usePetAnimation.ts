@@ -32,7 +32,17 @@ export function usePetAnimation() {
       staticSwapTimerRef.current = null;
     }
     try {
-      const path = await invoke<string>("get_animation_path", { animName: state });
+      // walk / run can use directional sprites if the character ships them
+      // (e.g. walk_left.gif). Other states ignore direction and use the
+      // standard lookup.
+      const direction =
+        state === "walk" || state === "run"
+          ? usePetStore.getState().movementDirection
+          : null;
+      const path = await invoke<string>("get_animation_path", {
+        animName: state,
+        direction,
+      });
       setAnimPath(path);
     } catch {}
     // After the GIF has had a chance to play one cycle, check whether the

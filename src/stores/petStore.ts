@@ -64,6 +64,11 @@ interface PetState {
    *  InputOverlay flips this on at send and off when the response arrives. */
   loadingBubble: boolean;
   inputVisible: boolean;
+  /** Direction the pet is currently walking / running, used to pick
+   *  walk_left / walk_right / walk_front / walk_back sprite variants if
+   *  the character ships them. null = no movement / unknown. */
+  movementDirection: "left" | "right" | "front" | "back" | null;
+  setMovementDirection: (d: "left" | "right" | "front" | "back" | null) => void;
   /** Custom drag-positioned coords for InputOverlay. null = use default
    *  bottom-center placement. In-memory only — resets on app restart. */
   inputPosition: { x: number; y: number } | null;
@@ -95,6 +100,8 @@ export const usePetStore = create<PetState>((set) => ({
   bubbleToken: 0,
   loadingBubble: false,
   inputVisible: false,
+  movementDirection: null,
+  setMovementDirection: (movementDirection) => set({ movementDirection }),
   inputPosition: null,
   setInputPosition: (inputPosition) => set({ inputPosition }),
   resetInputPosition: () => set({ inputPosition: null }),

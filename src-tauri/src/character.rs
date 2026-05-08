@@ -92,6 +92,28 @@ impl CharacterMeta {
         self.animation_path_with_overrides(anim, &overrides)
     }
 
+    /// Resolve `<anim>_<direction>` first (e.g. `walk_left.gif`); if no such
+    /// file exists, fall back to the standard `<anim>` resolution. The `_static`
+    /// switching is the frontend's job (it asks for `_static` on a separate
+    /// timer), so this method is purely for direction variants.
+    pub fn animation_path_directional(&self, anim: &str, direction: Option<&str>) -> PathBuf {
+        if let Some(d) = direction {
+            if !d.is_empty() {
+                let with_dir = format!("{}_{}", anim, d);
+                let overrides = AnimationOverrides::load(&self.dir);
+                if let Some(rel) = overrides.overrides.get(&with_dir) {
+                    let p = self.dir.join(rel);
+                    if p.exists() { return p; }
+                }
+                for ext in IMAGE_EXTS {
+                    let p = self.dir.join(format!("{}.{}", with_dir, ext));
+                    if p.exists() { return p; }
+                }
+            }
+        }
+        self.animation_path(anim)
+    }
+
     fn animation_path_with_overrides(
         &self,
         anim: &str,

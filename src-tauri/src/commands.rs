@@ -314,7 +314,11 @@ pub fn open_characters_folder(_state: State<AppState>) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn get_animation_path(state: State<AppState>, anim_name: String) -> String {
+pub fn get_animation_path(
+    state: State<AppState>,
+    anim_name: String,
+    direction: Option<String>,
+) -> String {
     use base64::{Engine as _, engine::general_purpose::STANDARD};
 
     let config = state.config.lock().unwrap();
@@ -323,7 +327,7 @@ pub fn get_animation_path(state: State<AppState>, anim_name: String) -> String {
     drop(config);
 
     let path = if let Ok(meta) = CharacterMeta::load(&char_dir) {
-        meta.animation_path(&anim_name)
+        meta.animation_path_directional(&anim_name, direction.as_deref())
     } else {
         return String::new();
     };

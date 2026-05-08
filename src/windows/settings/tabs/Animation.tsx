@@ -77,6 +77,16 @@ export function Animation() {
     }
     return null;
   };
+  const directionalFor = (anim: string): { dir: string; file: string | null }[] => {
+    return ["left", "right", "front", "back"].map((d) => {
+      let file: string | null = null;
+      for (const ext of IMAGE_EXTS) {
+        const f = `${anim}_${d}.${ext}`;
+        if (fileSet.has(f)) { file = f; break; }
+      }
+      return { dir: d, file };
+    });
+  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -91,8 +101,11 @@ export function Animation() {
       <div style={{ borderTop: "1px solid #eee", paddingTop: 16, display: "flex", flexDirection: "column", gap: 10 }}>
         <h3 style={{ margin: 0, fontSize: 15 }}>動作圖檔對應</h3>
         <p style={{ margin: 0, fontSize: 12, color: "#777", lineHeight: 1.6 }}>
-          在角色資料夾放入對應檔名的圖片即會自動套用。下列下拉可手動覆寫對應；
-          再放一張 <code>&lt;動作&gt;_static.png</code> 可讓動作播完後維持靜態（例：<code>sit_static.png</code>）。
+          在角色資料夾放入對應檔名的圖片即會自動套用。下列下拉可手動覆寫對應。
+          <br />
+          • <strong>靜態保持：</strong>放 <code>&lt;動作&gt;_static.png</code> 讓動作 1.5s 後切換到靜態圖（例：<code>sit.gif</code> 過程播完後切到 <code>sit_static.png</code> 維持坐姿）
+          <br />
+          • <strong>方向變體：</strong>walk / run 可放 <code>walk_left/right/front/back.gif</code> 等，會依目前移動方向自動選用；找不到時退回 <code>walk.gif</code>
         </p>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -100,9 +113,10 @@ export function Animation() {
             const override = overrides[key];
             const auto = autoFor(key);
             const stat = staticFor(key);
+            const dirs = (key === "walk" || key === "run") ? directionalFor(key) : null;
             const current = override ?? "";
             return (
-              <div key={key} style={{ display: "grid", gridTemplateColumns: "84px 1fr 1.2fr", alignItems: "center", gap: 8, fontSize: 12 }}>
+              <div key={key} style={{ display: "grid", gridTemplateColumns: "84px 1fr 1.4fr", alignItems: "center", gap: 8, fontSize: 12 }}>
                 <span style={{ fontWeight: 500 }}>
                   {label}
                   <span style={{ color: "#aaa", marginLeft: 4, fontSize: 11 }}>{key}</span>
@@ -121,7 +135,17 @@ export function Animation() {
                 </select>
                 <span style={{ fontSize: 11, color: "#888" }}>
                   預期：<code>{key}.gif/.webp/.png</code>
-                  {stat ? <> · 靜態：<code>{stat}</code></> : null}
+                  {stat ? <> · 靜態：<code>{stat}</code> ✓</> : null}
+                  {dirs ? (
+                    <>
+                      <br />方向：
+                      {dirs.map(({ dir, file }) => (
+                        <span key={dir} style={{ marginRight: 6, color: file ? "#2a8" : "#bbb" }}>
+                          {file ? "✓" : "✗"} {key}_{dir}
+                        </span>
+                      ))}
+                    </>
+                  ) : null}
                 </span>
               </div>
             );

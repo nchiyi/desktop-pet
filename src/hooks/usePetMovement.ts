@@ -54,7 +54,7 @@ export function usePetMovement(
   speed: number,
   characterSize: number
 ) {
-  const { position, setPosition, isDragging, setDragging, setIsMoving } = usePetStore();
+  const { position, setPosition, isDragging, setDragging, setIsMoving, setMovementDirection } = usePetStore();
   const targetRef = useRef<{ x: number; y: number }>(position);
   const rafRef = useRef<number>(0);
   const isDraggingRef = useRef(isDragging);
@@ -110,13 +110,26 @@ export function usePetMovement(
       mode === "FullScreen"
         ? { minX: 0, maxX: screen.width, minY: 0, maxY: screen.height }
         : getFixedAreaBounds(mode, screen);
-    targetRef.current = {
+    const newTarget = {
       x: bounds.minX + Math.random() * (bounds.maxX - bounds.minX - characterSize),
       y: bounds.minY + Math.random() * (bounds.maxY - bounds.minY - characterSize),
     };
+    targetRef.current = newTarget;
+
+    // Pick the sprite-direction variant from the dominant axis. Horizontal
+    // wins on ties because side profiles read more clearly than front/back.
+    const cur = usePetStore.getState().position;
+    const dx = newTarget.x - cur.x;
+    const dy = newTarget.y - cur.y;
+    const dir =
+      Math.abs(dx) >= Math.abs(dy)
+        ? (dx >= 0 ? "right" : "left")
+        : (dy >= 0 ? "front" : "back");
+    setMovementDirection(dir);
+
     // Stay at destination 15–35 seconds (doing idle variety animations)
     pauseUntilRef.current = performance.now() + 15000 + Math.random() * 20000;
-  }, [mode, characterSize, getScreenBounds]);
+  }, [mode, characterSize, getScreenBounds, setMovementDirection]);
 
   useEffect(() => {
     if (mode === "Fixed") {
