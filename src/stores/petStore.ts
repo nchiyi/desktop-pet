@@ -4,7 +4,7 @@ import { AnimationState } from "../types/character";
 interface Position { x: number; y: number; }
 
 const MAX_SEG_LEN = 180;
-const TOTAL_LOOPS = 3;
+const TOTAL_LOOPS = 2;
 
 /**
  * Split text into ≤MAX_SEG_LEN segments at sentence boundaries when possible,

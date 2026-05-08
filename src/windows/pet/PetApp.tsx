@@ -28,7 +28,7 @@ export function PetApp() {
     showBubble,
     inputVisible,
   } = usePetStore();
-  const TOTAL_LOOPS = 3;
+  const TOTAL_LOOPS = 2;
   const currentSegment = bubbleSegments[bubbleSegIndex];
   const atTurnLimit = useSessionStore((s) => s.atTurnLimit());
   const { animState, animPath, onDragStart, onDragEnd, onPromptSent, onReplyReceived } = usePetAnimation();
