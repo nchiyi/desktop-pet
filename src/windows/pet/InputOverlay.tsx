@@ -5,9 +5,20 @@ import { usePetStore } from "../../stores/petStore";
 interface Props {
   onPromptSent?: () => void;
   onReplyReceived?: () => void;
+  onImpatient?: () => void;
+  onWaitTimeout?: () => void;
 }
 
-export function InputOverlay({ onPromptSent, onReplyReceived }: Props) {
+// Wait-state thresholds for the pet's reaction while the CLI is thinking.
+const IMPATIENT_AFTER_MS = 30_000;
+const SAD_AFTER_MS = 60_000;
+
+export function InputOverlay({
+  onPromptSent,
+  onReplyReceived,
+  onImpatient,
+  onWaitTimeout,
+}: Props) {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const {
@@ -21,6 +32,19 @@ export function InputOverlay({ onPromptSent, onReplyReceived }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const dragCleanupRef = useRef<(() => void) | null>(null);
+  const impatientTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearWaitTimers = () => {
+    if (impatientTimerRef.current) {
+      clearTimeout(impatientTimerRef.current);
+      impatientTimerRef.current = null;
+    }
+    if (sadTimerRef.current) {
+      clearTimeout(sadTimerRef.current);
+      sadTimerRef.current = null;
+    }
+  };
 
   useEffect(() => {
     if (!inputVisible) return;
@@ -38,6 +62,7 @@ export function InputOverlay({ onPromptSent, onReplyReceived }: Props) {
     return () => {
       dragCleanupRef.current?.();
       dragCleanupRef.current = null;
+      clearWaitTimers();
     };
   }, []);
 
@@ -53,14 +78,27 @@ export function InputOverlay({ onPromptSent, onReplyReceived }: Props) {
     // No flicker because SpeechBubble's auto-expire is disabled in this mode.
     setLoadingBubble(true);
     onPromptSent?.();
+    // Tier the wait reaction: think → impatient → sad. Both are persistent
+    // and get overwritten by happy when the reply arrives.
+    clearWaitTimers();
+    impatientTimerRef.current = setTimeout(() => {
+      impatientTimerRef.current = null;
+      onImpatient?.();
+    }, IMPATIENT_AFTER_MS);
+    sadTimerRef.current = setTimeout(() => {
+      sadTimerRef.current = null;
+      onWaitTimeout?.();
+    }, SAD_AFTER_MS);
     try {
       // Rust appends to session and emits "session-updated"; useSessionSync in
       // PetApp updates the store — do not addExchange locally.
       const response = await invoke<string>("send_message", { prompt });
+      clearWaitTimers();
       onReplyReceived?.();
       // showBubble flips loadingBubble off as part of its set() — see store.
       showBubble(response);
     } catch (e) {
+      clearWaitTimers();
       showBubble(`錯誤：${e}`);
     } finally {
       setLoading(false);

@@ -29,4 +29,16 @@ describe("usePetAnimation", () => {
     await act(async () => { result.current.onReplyReceived(); });
     expect(result.current.animState).toBe("happy");
   });
+
+  it("onImpatient sets impatient state", async () => {
+    const { result } = renderHook(() => usePetAnimation());
+    await act(async () => { result.current.onImpatient(); });
+    expect(result.current.animState).toBe("impatient");
+  });
+
+  it("onWaitTimeout sets sad state", async () => {
+    const { result } = renderHook(() => usePetAnimation());
+    await act(async () => { result.current.onWaitTimeout(); });
+    expect(result.current.animState).toBe("sad");
+  });
 });

@@ -31,7 +31,16 @@ export function PetApp() {
   const TOTAL_LOOPS = 2;
   const currentSegment = bubbleSegments[bubbleSegIndex];
   const atTurnLimit = useSessionStore((s) => s.atTurnLimit());
-  const { animState, animPath, onDragStart, onDragEnd, onPromptSent, onReplyReceived } = usePetAnimation();
+  const {
+    animState,
+    animPath,
+    onDragStart,
+    onDragEnd,
+    onPromptSent,
+    onReplyReceived,
+    onImpatient,
+    onWaitTimeout,
+  } = usePetAnimation();
   const { position, onMouseDown: movementMouseDown } = usePetMovement(
     config.movement_mode,
     config.movement_speed,
@@ -310,7 +319,12 @@ export function PetApp() {
         animState={animState}
         size={config.character_size}
       />
-      <InputOverlay onPromptSent={onPromptSent} onReplyReceived={onReplyReceived} />
+      <InputOverlay
+        onPromptSent={onPromptSent}
+        onReplyReceived={onReplyReceived}
+        onImpatient={onImpatient}
+        onWaitTimeout={onWaitTimeout}
+      />
     </div>
   );
 }
