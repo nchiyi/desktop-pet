@@ -149,7 +149,6 @@ npx tsc --noEmit
 
 ## 9. 已知技術債（待處理）
 
-- `tests/SpeechBubble.test.tsx`：2 個測試停在單段播放假設，需更新到 multi-segment chunkText 行為（commit 7928eff 引入 multi-segment 但測試未同步）
 - daily log 寫入格式包含硬編碼中文 `👤 你 / 🤖 寵物`，未隨 i18n 切換
 - 對話視窗 `chat.title` / `chat.placeholder` 等 i18n key 已定義但未使用（`ChatApp.tsx` 直接寫 zh-TW）
 - 6px drag handle 在 4K 螢幕上手感偏窄，可考慮加 padding hit zone
